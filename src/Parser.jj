@@ -1,13 +1,15 @@
 options
 {
  static = false;
+ OUTPUT_DIRECTORY = "generated";
 }
 PARSER_BEGIN(Parser)
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import javax.xml.parsers.*;
-public class Parser implements ParserConstants
+import org.xml.sax.XMLReader;
+public class Parser
 {
  // URL donde obtener empresas y cotizaciones "actuales"
  private final static String URL = "http://www.infobolsa.es/acciones/ibex35";
@@ -90,7 +92,7 @@ public class Parser implements ParserConstants
      | < BODY : "<body class=\"ifb-menu-push\">" >
      | < BODY_FIN : "</body>" >
      | < NOMBRE_EMPRESA : "<td class=\"name\">" >
-     | < COTIZACION_EMPRESA : (["<td class=\"price flop\">", "<td class=\"price top\">"]) >
+     | < COTIZACION_EMPRESA : ("<td class=\"price flop\">" | "<td class=\"price top\">") >
      | < A_HREF : "<a href=\"http://www.infobolsa.es/cotizacion/" >
      | < A_FIN : "</a>" >
      | < ETIQUETA : "<" >
@@ -139,14 +141,14 @@ public class Parser implements ParserConstants
  (
   <NOMBRE_EMPRESA> <A_HREF> <CARACTERES> <ETIQUETA_FIN>
    (
-   nombre = String()
+   nombre = <CARACTERES>
    )
    <A_FIN>
    <COTIZACION_EMPRESA>
-   t = <NUMBER>
+   t = <NUMERO>
    {
        cotizacion = Double.parseDouble(t.image);
-       tabla.add(nombre,cotizacion);
+       tabla.put(nombre,cotizacion);
    }
    )*
 
