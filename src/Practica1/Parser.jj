@@ -104,6 +104,7 @@ TOKEN :
     (
       "<td class=\"price flop\">"
     | "<td class=\"price top\">"
+    | "<td class=\"price equal\">"
     ) >
 | < A_HREF : "<a href=/cotizacion/" >
 | < A_FIN : "</a>" >
@@ -172,9 +173,11 @@ Hashtable < String, Double > cotizaciones() :
         < COTIZACION_EMPRESA >
     t = < NUMERO >
     {
-      cotizacion = Double.parseDouble(t.image);
+      cotizacion = Double.parseDouble(t.image.replace(',','.'));  //En la web las comas separan los decimales
       tabla.put(nombre, cotizacion);
+      nombre = ""; //Reiniciar variable
     }
+    saltar()
   )*
   {
     return tabla;
