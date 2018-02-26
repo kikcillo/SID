@@ -1,0 +1,182 @@
+options
+{
+ static = false;
+}
+
+PARSER_BEGIN(Parser)
+package Practica1;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import javax.xml.parsers.*;
+import org.xml.sax.XMLReader;
+
+public class Parser
+{
+  // URL donde obtener empresas y cotizaciones "actuales"
+  private final static String URL = "http://www.infobolsa.es/acciones/ibex35";
+
+  // Fichero donde obtener empresas y cotizaciones "obsoletas"
+  private final static String FICHERO = "cotizacion.xml";
+  Hashtable < String, Double > leeTablaDeFichero(String fichero)
+  {
+    try
+    {
+      SAXParserFactory factory = SAXParserFactory.newInstance();
+      //factory.setNamespaceAware(true);
+      SAXParser saxParser = factory.newSAXParser();
+      XMLReader parser = saxParser.getXMLReader();
+      CotizacionesHandler handler = new CotizacionesHandler();
+      parser.setContentHandler(handler);
+      saxParser.parse(FICHERO, handler);
+      return handler.getTabla();
+    }
+    catch (Exception e)
+    {
+      return new Hashtable < String, Double > ();
+    }
+  }
+
+  void escribeTablaEnFichero(Hashtable < String, Double > tabla, String nombre)
+  {
+    PrintStream out = null;
+    try
+    {
+      //...
+    }
+    catch (Exception e)
+    {
+      e.printStackTrace();
+    }
+  }
+
+  public static void main(String args [])
+  {
+    try
+    {
+      // Entrada de datos de la web
+      InputStream inputStream= new URL(URL).openStream();
+      InputStreamReader reader = new InputStreamReader(inputStream);
+      Parser parser = new Parser(reader);
+      Hashtable < String, Double > tablaCotizaciones = parser.leeTablaCotizaciones();
+      // Entrada de datos de teclado
+      System.out.println("Introduzca el nombre de una empresa del IBEX 35: ");
+      //...
+      // Entrada de datos de fichero
+      Hashtable < String, Double > tablaAnterior = parser.leeTablaDeFichero(FICHERO);
+      // Diferencia de precios
+      //...
+      // Salvamos los resultados en fichero
+      parser.escribeTablaEnFichero(tablaCotizaciones, FICHERO);
+    }
+    catch (Exception e)
+    {
+      System.out.println("Exception " + e.getMessage());
+    }
+    catch (Error e)
+    {
+      System.out.println("Error " + e.getMessage());
+    }
+  }
+}
+
+PARSER_END(Parser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN :
+{
+  < CABECERA : "<!DOCTYPE html>" >
+| < HTML : "<html>" >
+| < HTML_FIN : "</html>" >
+| < HEAD : "<head>" >
+| < HEAD_FIN : "</head>" >
+| < BODY : "<body class=\"ifb-menu-push\">" >
+| < BODY_FIN : "</body>" >
+| < NOMBRE_EMPRESA : "<td class=\"name\">" >
+| < COTIZACION_EMPRESA :
+    (
+      "<td class=\"price flop\">"
+    | "<td class=\"price top\">"
+    ) >
+| < A_HREF : "<a href=/cotizacion/" >
+| < A_FIN : "</a>" >
+| < ETIQUETA : "<" >
+| < ETIQUETA_FIN : ">" >
+| < BARRA : "/" >
+| < NUMERO : ([ "0"-"9" ])* (",")? ([ "0"-"9" ])+ >
+| < CARACTERES : ([ "A"-"Z", "a"-"z", "0"-"9", "\u00c1", "\u00c9", "\u00cd", "\u00d3", "\u00da", "\u00dc", "\u00d1", 
+    "\u00e1", "\u00e9", "\u00ed", "\u00f3", "\u00fa", "\u00fc", "\u00f1", "\u00a1", "!", "\u20ac", ".", "\u00bf", "?", ":", ";", ",", 
+    "'", "=", "\"", "-", "_", "+", "\u00ba", "*", "(", ")", "\\", "@", "%", "#", "&", "[", 
+    "]", "|", "{", "}", "$" ])+ >
+}
+
+Hashtable < String, Double > leeTablaCotizaciones() :
+{
+  Hashtable < String, Double > tabla = null;
+}
+{
+  < CABECERA > < HTML > < HEAD > saltar() < HEAD_FIN > tabla = body() < HTML_FIN >
+  {
+    return tabla;
+  }
+}
+
+void saltar() :
+{}
+{
+  (
+    < CARACTERES >
+  | < NUMERO >
+  | < ETIQUETA >
+  | < ETIQUETA_FIN >
+  | < BARRA >
+  | < A_FIN >
+  )+
+}
+
+Hashtable < String, Double > body() :
+{
+  Hashtable < String, Double > tabla = null;
+}
+{
+  < BODY > saltar() tabla = cotizaciones() < BODY_FIN >
+  {
+    return tabla;
+  }
+}
+
+Hashtable < String, Double > cotizaciones() :
+{
+  Hashtable < String, Double > tabla = new Hashtable < String, Double > ();
+  String nombre = "";
+  Double cotizacion;
+  Token t;
+}
+{
+  (
+    < NOMBRE_EMPRESA > < ETIQUETA > (< CARACTERES >| <BARRA>)* < ETIQUETA_FIN >
+    (
+    t = < CARACTERES >
+    {
+      nombre = nombre + " " + t.image;
+    }
+    )+
+    < A_FIN >(<ETIQUETA> <BARRA> <CARACTERES> <ETIQUETA_FIN>) //quizas halla que poner aqui un +
+        < COTIZACION_EMPRESA >
+    t = < NUMERO >
+    {
+      cotizacion = Double.parseDouble(t.image);
+      tabla.put(nombre, cotizacion);
+    }
+  )*
+  {
+    return tabla;
+  }
+}
