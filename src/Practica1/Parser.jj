@@ -1,6 +1,6 @@
 options
 {
- static = false;
+  static = false;
 }
 
 PARSER_BEGIN(Parser)
@@ -39,12 +39,31 @@ public class Parser
 
   void escribeTablaEnFichero(Hashtable < String, Double > tabla, String nombre)
   {
-    PrintStream out = null;
     try
     {
-      //...
+      PrintStream out = new PrintStream(nombre);
+      try
+      {
+        out.print("<?xml version=\"1.0\"?>\n");
+        out.print("<empresas>\n");
+        for (Enumeration < String > nombres = tabla.keys(); nombres.hasMoreElements();)
+        {
+          out.print("\t<empresa>\n");
+          String name = nombres.nextElement();
+          out.print("\t\t<nombre>" + name + "</nombre>\n");
+          out.print("\t\t<cotizacion>" + tabla.get(name) + "</cotizacion>\n");
+          out.print("\t</empresa>\n");
+        }
+        out.print("</empresas>\n");
+        out.close();
+      }
+      catch (Exception e)
+      {
+        e.printStackTrace();
+        out.close();
+      }
     }
-    catch (Exception e)
+    catch (FileNotFoundException e)
     {
       e.printStackTrace();
     }
@@ -55,13 +74,14 @@ public class Parser
     try
     {
       // Entrada de datos de la web
-      InputStream inputStream= new URL(URL).openStream();
-      InputStreamReader reader = new InputStreamReader(inputStream);
+      InputStream inputStream = new URL(URL).openStream();
+      InputStreamReader reader = new InputStreamReader(inputStream, "UTF-8");
       Parser parser = new Parser(reader);
       Hashtable < String, Double > tablaCotizaciones = parser.leeTablaCotizaciones();
       // Entrada de datos de teclado
+      Scanner keyboard = new Scanner(System.in);
       System.out.println("Introduzca el nombre de una empresa del IBEX 35: ");
-      //...
+      String empresa = keyboard.next();
       // Entrada de datos de fichero
       Hashtable < String, Double > tablaAnterior = parser.leeTablaDeFichero(FICHERO);
       // Diferencia de precios
@@ -162,18 +182,23 @@ Hashtable < String, Double > cotizaciones() :
 }
 {
   (
-    < NOMBRE_EMPRESA > < ETIQUETA > (< CARACTERES >| <BARRA>)* < ETIQUETA_FIN >
+    < NOMBRE_EMPRESA > < ETIQUETA >
+    (
+      < CARACTERES >
+    | < BARRA >
+    )*
+    < ETIQUETA_FIN > 
     (
     t = < CARACTERES >
     {
       nombre = nombre + " " + t.image;
     }
-    )+
-    < A_FIN >(<ETIQUETA> <BARRA> <CARACTERES> <ETIQUETA_FIN>) //quizas halla que poner aqui un +
-        < COTIZACION_EMPRESA >
+    )+ 
+    < A_FIN > (< ETIQUETA > < BARRA > < CARACTERES > < ETIQUETA_FIN >)  //quizas halla que poner aqui un +
+    < COTIZACION_EMPRESA > 
     t = < NUMERO >
     {
-      cotizacion = Double.parseDouble(t.image.replace(',','.'));  //En la web las comas separan los decimales
+      cotizacion = Double.parseDouble(t.image.replace(',', '.')); //En la web las comas separan los decimales
       tabla.put(nombre, cotizacion);
       nombre = ""; //Reiniciar variable
     }
