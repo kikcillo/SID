@@ -97,6 +97,7 @@ public class Parser
       Scanner keyboard = new Scanner(System.in);
       System.out.println("Introduzca el nombre de una empresa del IBEX 35: ");
       String empresa = keyboard.next();
+      empresa = empresa.trim().toUpperCase();
 
       // Entrada de datos de fichero
       Hashtable < String, Double > tablaAnterior = parser.leeTablaDeFichero(FICHERO);
@@ -117,11 +118,11 @@ public class Parser
       Double cotizacionAnterior = tablaAnterior.get(empresa);
       if (cotizacionAnterior != null) {
         Double diff = cotizacion - cotizacionAnterior;
+        String colorCode = (diff > 0) ? "\033[32m" : "\033[31m"; //Muestra la diferencia en verde/rojo
         System.out.println("La cotizacion de " + empresa + " es: ");
-        System.out.println("ANTES    DESPUES    DIFERENCIA");
-        if (diff >= 0) {
-          System.out.println(cotizacionAnterior + " " + cotizacion + " " + diff);
-        }
+        System.out.println("-------------------------------------");
+        System.out.printf("%-10s %-10s %-10s \n", "ANTES","AHORA","DIFERENCIA");
+        System.out.printf("%-10.4f %-10.4f %s %-10.4f \n" ,cotizacionAnterior,cotizacion,colorCode,diff);
       } else {
         System.out.println("La cotizacion de " + empresa + " es: \n" + cotizacion + "\nEs el único dato disponible de esta empresa");
       }

@@ -170,13 +170,11 @@ Hashtable < String, Double > cotizaciones() :
         (t = < CARACTERES >
         {
           nombre = nombre + " " + t.image;
-          System.out.println(nombre);
         })
         |
         ( t = <NUMERO>  //Hay empresas con numero en el nombre (IBEX 35)
         {
           nombre = nombre + " " + t.image;
-          System.out.println("OJO QUE ESTE ES NUMERO" + nombre);
           }
          )
     )+
@@ -189,7 +187,6 @@ Hashtable < String, Double > cotizaciones() :
       numero = numero.replace(",","."); //Cambiamos la coma por el punto
       cotizacion = Double.parseDouble(numero);  //En la web las comas separan los decimales
       tabla.put(nombre.toUpperCase(),cotizacion);
-      System.out.println(cotizacion);
       nombre = ""; //Reiniciar variable
     }
     saltarFila() <TR_FIN>

@@ -19,13 +19,13 @@ public class CotizacionesHandler extends DefaultHandler {
 
 	@Override
 	public void startDocument() throws SAXException {
-		System.out.println("Empieza el documento");
+		//System.out.println("Empieza el documento");
 		tabla.clear();
 	}
 
 	@Override
 	public void endDocument() throws SAXException {
-		System.out.println("Termina el documento");
+		//System.out.println("Termina el documento");
 	}
 
 	@Override
@@ -35,17 +35,17 @@ public class CotizacionesHandler extends DefaultHandler {
 		}else if (qName == "cotizacion"){
 			situacion = COTIZACION;
 		}
-		System.out.println("Leo una etiqueta " + qName);
+		//System.out.println("Leo una etiqueta " + qName);
 	}
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-		System.out.println("Cierro una etiqueta");
+		//System.out.println("Cierro una etiqueta");
 	}
 
 	@Override
 	public void characters(char ch[], int start, int length) throws SAXException {
-		System.out.println("Leo caracteres: " + new String(ch, start, length));
+		//System.out.println("Leo caracteres: " + new String(ch, start, length));
 		if(situacion == NOMBRE){
 			empresa = new String(ch, start, length);
 		}else if (situacion == COTIZACION){
