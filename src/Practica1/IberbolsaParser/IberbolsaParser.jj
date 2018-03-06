@@ -1,0 +1,200 @@
+options
+{
+ static = false;
+ LOOKAHEAD=2;
+}
+
+PARSER_BEGIN(IberbolsaParser)
+package Practica1.IberbolsaParser;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import javax.xml.parsers.*;
+import org.xml.sax.XMLReader;
+
+public class IberbolsaParser
+{
+  // URL donde obtener empresas y cotizaciones "actuales"
+  private final static String URL = "http://www.iberbolsa.com";
+
+  public static String getURL() {
+    return URL;
+  }
+
+}
+
+PARSER_END(IberbolsaParser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN :
+{
+  < CABECERA : "<!DOCTYPE html>" >
+| < HTML : "<html>" >
+| < HTML_FIN : "</html>" >
+| < HEAD : "<head>" >
+| < HEAD_FIN : "</head>" >
+| < BODY : "<body" >
+| < BODY_FIN : "</body>" >
+| < TBODY : "<tbody>" >
+| < TBODY_FIN : "</tbody>" >
+| < TR : "<tr" >
+| < TR_FIN : "</tr>" >
+| < TD : "<td" >
+| < CABECERA_TABLA : "<tr bgcolor=#D0EAFD" >
+| < A_HREF : "<a " >
+| < A_FIN : "</a>" >
+| < ETIQUETA : "<" >
+| < ETIQUETA_FIN : ">" >
+| < BARRA : "/" >
+| < NUMERO : (([ "0"-"9" ])+ ".")* ([ "0"-"9" ])*(",")? ([ "0"-"9" ])+ >  //A veces ponen los puntos de los miles
+| < COMENTARIO : "<!--" >
+| < COMENTARIO_FIN : "-->" >
+| < CARACTERES : ([ "A"-"Z", "a"-"z", "0"-"9", "\ufffd", "\u00c1", "\u00c9", "\u00cd", "\u00d3", "\u00da", "\u00dc", "\u00d1",
+    "\u00e1", "\u00e9", "\u00ed", "\u00f3", "\u00fa", "\u00fc", "\u00f1", "\u00a1", "!", "\u20ac", ".", "\u00bf", "?", ":", ";", ",", 
+    "'", "=", "\"", "-", "_", "+", "\u00ba", "*", "(", ")", "\\", "@", "%", "#", "&", "[", 
+    "]", "|", "{", "}", "$" ])+ >
+}
+
+void saltar() :
+{}
+{
+  (
+    < CARACTERES >
+  | < NUMERO >
+  | < ETIQUETA >
+  | < ETIQUETA_FIN >
+  | < BARRA >
+  | <A_HREF>
+  | < A_FIN >
+  | < COMENTARIO>
+  | < COMENTARIO_FIN>
+  )+
+}
+
+void saltarTabla() :
+{}
+{
+  (
+    < CARACTERES >
+  | < NUMERO >
+  | < ETIQUETA >
+  | < ETIQUETA_FIN >
+  | < BARRA >
+  | <A_HREF>
+  | < A_FIN >
+  | < TD >
+  | < TR >
+  | < TR_FIN >
+  | < TBODY >
+  | < TBODY_FIN >
+  | <BODY>
+  | <COMENTARIO>
+  | <COMENTARIO_FIN>
+  )+
+}
+
+void saltarFila() :
+{}
+{
+  (
+    < CARACTERES >
+  | < NUMERO >
+  | < ETIQUETA >
+  | < ETIQUETA_FIN >
+  | < BARRA >
+  | < A_HREF >
+  | < A_FIN >
+  | < TD >
+  | <COMENTARIO>
+  | <COMENTARIO_FIN>
+  )+
+}
+
+void saltarComentario() :
+{}
+{
+<COMENTARIO>
+  (
+    < CARACTERES >
+  | < NUMERO >
+  | < ETIQUETA >
+  | < ETIQUETA_FIN >
+  | < BARRA >
+  | < A_HREF >
+  | < A_FIN >
+  | < TD >
+  )+
+  <COMENTARIO_FIN>
+}
+
+Hashtable < String, Double > leeTablaCotizaciones() :
+{
+  Hashtable < String, Double > tabla = null;
+}
+{
+  < HTML > < HEAD > saltarTabla() < HEAD_FIN > tabla = body()
+  {
+    return tabla;
+  }
+}
+
+Hashtable < String, Double > body() :
+{
+  Hashtable < String, Double > tabla = null;
+}
+{
+  <BODY>  saltarTabla()  <CABECERA_TABLA> saltarFila() <TR_FIN> tabla=cotizaciones() saltarTabla() < BODY_FIN >
+  {
+    return tabla;
+  }
+}
+
+Hashtable < String, Double > cotizaciones() :
+{
+  Hashtable < String, Double > tabla = new Hashtable < String, Double > ();
+  String nombre = "";
+  Double cotizacion;
+  Token t;
+}
+{
+  (
+    < TR > saltar() <TD> (<CARACTERES>)* <ETIQUETA_FIN> <A_HREF> (<CARACTERES> | <BARRA>)+ <ETIQUETA_FIN>
+    (
+        (t = < CARACTERES >
+        {
+          nombre = nombre + " " + t.image;
+          System.out.println(nombre);
+        })
+        |
+        ( t = <NUMERO>  //Hay empresas con numero en el nombre (IBEX 35)
+        {
+          nombre = nombre + " " + t.image;
+          System.out.println("OJO QUE ESTE ES NUMERO" + nombre);
+          }
+         )
+    )+
+    < A_FIN > (<ETIQUETA> <BARRA> (<CARACTERES>)+ <ETIQUETA_FIN>)  //</a></td y su morralla>
+    (saltarComentario())+ <TD> (<CARACTERES>)+ <ETIQUETA_FIN>
+    t = < NUMERO >
+    {
+      String numero = t.image;
+      numero = numero.replace(".",""); //Eliminamos el punto de los miles
+      numero = numero.replace(",","."); //Cambiamos la coma por el punto
+      cotizacion = Double.parseDouble(numero);  //En la web las comas separan los decimales
+      tabla.put(nombre.toUpperCase(),cotizacion);
+      System.out.println(cotizacion);
+      nombre = ""; //Reiniciar variable
+    }
+    saltarFila() <TR_FIN>
+  )*
+  {
+    return tabla;
+  }
+}

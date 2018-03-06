@@ -5,6 +5,7 @@ options
 
 PARSER_BEGIN(Parser)
 package Practica1;
+import Practica1.IberbolsaParser.IberbolsaParser;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -77,7 +78,15 @@ public class Parser
       InputStream inputStream = new URL(URL).openStream();
       InputStreamReader reader = new InputStreamReader(inputStream, "UTF-8");
       Parser parser = new Parser(reader);
+
+      //Parser de la segunda web
+      InputStream inputStream2= new URL(IberbolsaParser.getURL()).openStream();
+      InputStreamReader reader2 = new InputStreamReader(inputStream2);
+      IberbolsaParser iberbolsaParser = new IberbolsaParser(reader2);
+
       Hashtable < String, Double > tablaCotizaciones = parser.leeTablaCotizaciones();
+      Hashtable < String, Double > tablaCotizacionesIberbolsa = iberbolsaParser.leeTablaCotizaciones();
+
       // Entrada de datos de teclado
       Scanner keyboard = new Scanner(System.in);
       System.out.println("Introduzca el nombre de una empresa del IBEX 35: ");
@@ -182,24 +191,19 @@ Hashtable < String, Double > cotizaciones() :
 }
 {
   (
-    < NOMBRE_EMPRESA > < ETIQUETA >
-    (
-      < CARACTERES >
-    | < BARRA >
-    )*
-    < ETIQUETA_FIN > 
+    < NOMBRE_EMPRESA > < ETIQUETA > (< CARACTERES >| <BARRA>)* < ETIQUETA_FIN >
     (
     t = < CARACTERES >
     {
       nombre = nombre + " " + t.image;
     }
-    )+ 
+    )+
     < A_FIN > (< ETIQUETA > < BARRA > < CARACTERES > < ETIQUETA_FIN >)  //quizas halla que poner aqui un +
-    < COTIZACION_EMPRESA > 
+    < COTIZACION_EMPRESA >
     t = < NUMERO >
     {
-      cotizacion = Double.parseDouble(t.image.replace(',', '.')); //En la web las comas separan los decimales
-      tabla.put(nombre, cotizacion);
+      cotizacion = Double.parseDouble(t.image.replace(',','.'));  //En la web las comas separan los decimales
+      tabla.put(nombre.toUpperCase(), cotizacion); //Guardamos los nombres en mayusculas por consistencias
       nombre = ""; //Reiniciar variable
     }
     saltar()
