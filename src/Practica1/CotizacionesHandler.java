@@ -7,12 +7,20 @@ import org.xml.sax.helpers.*;
 
 public class CotizacionesHandler extends DefaultHandler {
 
+	final int NADA = 0;
+	final int NOMBRE = 1;
+	final int COTIZACION = 2;
+
 	private Hashtable<String, Double> tabla = new Hashtable<String, Double>();
 
-	// ...
+	String empresa = "";
+	double cotizacion = 0.0;
+	int situacion = NADA;
+
 	@Override
 	public void startDocument() throws SAXException {
 		System.out.println("Empieza el documento");
+		tabla.clear();
 	}
 
 	@Override
@@ -22,7 +30,12 @@ public class CotizacionesHandler extends DefaultHandler {
 
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-		System.out.println("Leo una etiqueta");
+		if (qName == "nombre"){
+			situacion = NOMBRE;
+		}else if (qName == "cotizacion"){
+			situacion = COTIZACION;
+		}
+		System.out.println("Leo una etiqueta " + qName);
 	}
 
 	@Override
@@ -32,7 +45,16 @@ public class CotizacionesHandler extends DefaultHandler {
 
 	@Override
 	public void characters(char ch[], int start, int length) throws SAXException {
-		System.out.println("Leo caracteres");
+		System.out.println("Leo caracteres: " + new String(ch, start, length));
+		if(situacion == NOMBRE){
+			empresa = new String(ch, start, length);
+		}else if (situacion == COTIZACION){
+			cotizacion = Double.parseDouble(new String(ch, start, length));
+			tabla.put(empresa,cotizacion);
+			empresa = "";
+			cotizacion = 0.0;
+		}
+		situacion = NADA;
 	}
 
 	public Hashtable<String, Double> getTabla() {
